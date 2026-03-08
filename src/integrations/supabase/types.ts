@@ -14,7 +14,203 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      buckets: {
+        Row: {
+          category: string | null
+          created_at: string
+          goal: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          goal?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          goal?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      entry_files: {
+        Row: {
+          created_at: string
+          entry_id: string
+          file_name: string | null
+          file_type: string
+          file_url: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_id: string
+          file_name?: string | null
+          file_type: string
+          file_url: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string
+          file_name?: string | null
+          file_type?: string
+          file_url?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_files_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entry_tags: {
+        Row: {
+          entry_id: string
+          id: string
+          tag: string
+        }
+        Insert: {
+          entry_id: string
+          id?: string
+          tag: string
+        }
+        Update: {
+          entry_id?: string
+          id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_tags_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entries: {
+        Row: {
+          bucket_id: string | null
+          content: string | null
+          created_at: string
+          entry_date: string
+          entry_type: string
+          id: string
+          mood: Database["public"]["Enums"]["mood_type"] | null
+          transcript: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bucket_id?: string | null
+          content?: string | null
+          created_at?: string
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          mood?: Database["public"]["Enums"]["mood_type"] | null
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bucket_id?: string | null
+          content?: string | null
+          created_at?: string
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          mood?: Database["public"]["Enums"]["mood_type"] | null
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      people_mentions: {
+        Row: {
+          entry_id: string
+          id: string
+          person_name: string
+        }
+        Insert: {
+          entry_id: string
+          id?: string
+          person_name: string
+        }
+        Update: {
+          entry_id?: string
+          id?: string
+          person_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_mentions_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +219,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      mood_type: "very_positive" | "positive" | "neutral" | "stressed" | "sad"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +346,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      mood_type: ["very_positive", "positive", "neutral", "stressed", "sad"],
+    },
   },
 } as const
