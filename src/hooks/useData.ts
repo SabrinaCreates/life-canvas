@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
+import { mockEntries } from "@/lib/mockEntries";
 
 type MoodType = Database["public"]["Enums"]["mood_type"];
 
@@ -16,6 +17,10 @@ export function useJournalEntries() {
         .select("*, entry_tags(tag), people_mentions(person_name), buckets(name)")
         .order("entry_date", { ascending: false });
       if (error) throw error;
+      // If no real data, use mock entries for demo
+      if (!data || data.length === 0) {
+        return mockEntries as any;
+      }
       return data;
     },
   });
