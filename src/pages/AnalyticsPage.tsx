@@ -1,7 +1,76 @@
+import { useMemo } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { BarChart3, TrendingUp, Users, Hash } from "lucide-react";
+import { useJournalEntries } from "@/hooks/useData";
+
+const moodScore: Record<string, number> = {
+  very_positive: 100, positive: 75, neutral: 50, stressed: 25, sad: 10,
+};
 
 export default function AnalyticsPage() {
+  const { data: entries } = useJournalEntries();
+
+  // Mood trend by day of week (last 30 days)
+  const moodByDay = useMemo(() => {
+    if (!entries) return [50, 50, 50, 50, 50, 50, 50];
+    const days: number[][] = [[], [], [], [], [], [], []];
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    entries.forEach((e) => {
+      const d = new Date(e.entry_date);
+      if (d >= cutoff && e.mood) {
+        days[d.getDay() === 0 ? 6 : d.getDay() - 1].push(moodScore[e.mood] ?? 50);
+      }
+    });
+    return days.map((arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0));
+  }, [entries]);
+
+  // Entry frequency by day of week
+  const freqByDay = useMemo(() => {
+    if (!entries) return [0, 0, 0, 0, 0, 0, 0];
+    const days = [0, 0, 0, 0, 0, 0, 0];
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    entries.forEach((e) => {
+      const d = new Date(e.entry_date);
+      if (d >= cutoff) days[d.getDay() === 0 ? 6 : d.getDay() - 1]++;
+    });
+    return days;
+  }, [entries]);
+
+  // Top tags
+  const topTags = useMemo(() => {
+    if (!entries) return [];
+    const counts: Record<string, number> = {};
+    entries.forEach((e) => {
+      (e.entry_tags as any[])?.forEach((t: any) => {
+        counts[t.tag] = (counts[t.tag] || 0) + 1;
+      });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([topic, count]) => ({ topic, count }));
+  }, [entries]);
+
+  // Top people
+  const topPeople = useMemo(() => {
+    if (!entries) return [];
+    const counts: Record<string, number> = {};
+    entries.forEach((e) => {
+      (e.people_mentions as any[])?.forEach((p: any) => {
+        counts[p.person_name] = (counts[p.person_name] || 0) + 1;
+      });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+  }, [entries]);
+
+  const maxTag = topTags[0]?.count || 1;
+  const maxFreq = Math.max(...freqByDay, 1);
+
   return (
     <DashboardLayout>
       <div className="max-w-5xl animate-fade-in">
@@ -16,7 +85,7 @@ export default function AnalyticsPage() {
               <h3 className="font-display text-lg text-foreground">Mood Trend</h3>
             </div>
             <div className="h-32 flex items-end gap-2">
-              {[60, 70, 55, 80, 75, 85, 90].map((h, i) => (
+              {moodByDay.map((h, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <div
                     className="w-full bg-primary/20 rounded-t-md transition-all"
@@ -37,11 +106,11 @@ export default function AnalyticsPage() {
               <h3 className="font-display text-lg text-foreground">Entry Frequency</h3>
             </div>
             <div className="h-32 flex items-end gap-2">
-              {[3, 5, 2, 7, 4, 6, 5].map((h, i) => (
+              {freqByDay.map((h, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <div
                     className="w-full bg-accent/30 rounded-t-md transition-all"
-                    style={{ height: `${h * 14}%` }}
+                    style={{ height: `${maxFreq ? (h / maxFreq) * 100 : 0}%` }}
                   />
                   <span className="text-[10px] text-muted-foreground">
                     {["M", "T", "W", "T", "F", "S", "S"][i]}
@@ -58,25 +127,22 @@ export default function AnalyticsPage() {
               <h3 className="font-display text-lg text-foreground">Top Topics</h3>
             </div>
             <div className="space-y-3">
-              {[
-                { topic: "Career Growth", count: 24 },
-                { topic: "Exercise", count: 18 },
-                { topic: "Family", count: 14 },
-                { topic: "Travel", count: 9 },
-              ].map((t) => (
+              {topTags.length > 0 ? topTags.map((t) => (
                 <div key={t.topic} className="flex items-center justify-between">
-                  <span className="text-sm text-foreground">{t.topic}</span>
+                  <span className="text-sm text-foreground">#{t.topic}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-primary/40 rounded-full"
-                        style={{ width: `${(t.count / 24) * 100}%` }}
+                        style={{ width: `${(t.count / maxTag) * 100}%` }}
                       />
                     </div>
                     <span className="text-xs text-muted-foreground w-6 text-right">{t.count}</span>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-muted-foreground">No tags yet. Add tags to your entries.</p>
+              )}
             </div>
           </div>
 
@@ -87,12 +153,7 @@ export default function AnalyticsPage() {
               <h3 className="font-display text-lg text-foreground">Most Mentioned People</h3>
             </div>
             <div className="space-y-3">
-              {[
-                { name: "Mom", count: 12 },
-                { name: "Sarah", count: 8 },
-                { name: "David", count: 5 },
-                { name: "Alex", count: 3 },
-              ].map((p) => (
+              {topPeople.length > 0 ? topPeople.map((p) => (
                 <div key={p.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
@@ -102,7 +163,9 @@ export default function AnalyticsPage() {
                   </div>
                   <span className="text-xs text-muted-foreground">{p.count} mentions</span>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-muted-foreground">No people mentioned yet.</p>
+              )}
             </div>
           </div>
         </div>
