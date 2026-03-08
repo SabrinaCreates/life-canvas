@@ -47,27 +47,30 @@ const emotionalDistribution = [
 export default function AnalyticsPage() {
   const { data: entries } = useJournalEntries();
 
-  const isMockData = entries?.[0]?.id?.startsWith("mock-");
-
   const moodByDay = useMemo(() => {
-    if (!entries || entries.length === 0 || isMockData) return fallbackMoodByDay;
+    if (!entries || entries.length === 0) return fallbackMoodByDay;
     const days: number[][] = [[], [], [], [], [], [], []];
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
     entries.forEach((e) => {
-      const d = new Date(e.entry_date);
-      if (d >= cutoff && e.mood) days[d.getDay() === 0 ? 6 : d.getDay() - 1].push(moodScore[e.mood] ?? 50);
+      if (e.mood) {
+        const d = new Date(e.entry_date + "T00:00:00");
+        const idx = d.getDay() === 0 ? 6 : d.getDay() - 1;
+        days[idx].push(moodScore[e.mood] ?? 50);
+      }
     });
     const result = days.map((arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0));
     return result.some((v) => v > 0) ? result : fallbackMoodByDay;
-  }, [entries, isMockData]);
+  }, [entries]);
 
   const freqByDay = useMemo(() => {
-    if (!entries || entries.length === 0 || isMockData) return fallbackFreqByDay;
+    if (!entries || entries.length === 0) return fallbackFreqByDay;
     const days = [0, 0, 0, 0, 0, 0, 0];
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    entries.forEach((e) => { const d = new Date(e.entry_date); if (d >= cutoff) days[d.getDay() === 0 ? 6 : d.getDay() - 1]++; });
+    entries.forEach((e) => {
+      const d = new Date(e.entry_date + "T00:00:00");
+      const idx = d.getDay() === 0 ? 6 : d.getDay() - 1;
+      days[idx]++;
+    });
     return days.some((v) => v > 0) ? days : fallbackFreqByDay;
-  }, [entries, isMockData]);
+  }, [entries]);
 
   const topTags = useMemo(() => {
     if (!entries || entries.length === 0) return fallbackTopTags;
