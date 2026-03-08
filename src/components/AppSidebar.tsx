@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   BookOpen,
@@ -10,6 +11,7 @@ import {
   Star,
   Settings,
   Plus,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -30,16 +32,15 @@ interface AppSidebarProps {
 
 export function AppSidebar({ onNewEntry }: AppSidebarProps) {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar flex flex-col z-50">
-      {/* Logo */}
       <div className="px-6 py-6 flex items-center gap-3">
         <img src="/favicon.png" alt="Life Dashboard" className="w-8 h-8" />
         <span className="text-sidebar-foreground font-display text-lg">Life Dashboard</span>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.url;
@@ -60,14 +61,20 @@ export function AppSidebar({ onNewEntry }: AppSidebarProps) {
         })}
       </nav>
 
-      {/* New Entry Button */}
-      <div className="px-4 pb-6">
+      <div className="px-4 pb-4 space-y-2">
         <button
           onClick={onNewEntry}
           className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-full py-3 text-sm font-semibold hover:opacity-90 transition-opacity shadow-elevated"
         >
           <Plus className="w-4 h-4" />
           New Entry
+        </button>
+        <button
+          onClick={signOut}
+          className="w-full flex items-center justify-center gap-2 text-sidebar-foreground/50 hover:text-sidebar-foreground rounded-full py-2 text-xs transition-colors"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          Sign Out
         </button>
       </div>
     </aside>

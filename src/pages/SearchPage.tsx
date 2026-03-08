@@ -1,23 +1,26 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Search, BookOpen } from "lucide-react";
+import { useJournalEntries } from "@/hooks/useData";
 
-const allEntries = [
-  { id: 5, date: "Mar 30, 2026", mood: "😊", text: "Amazing dinner with Mom. We talked about childhood memories and laughed a lot.", tags: ["family"], people: ["Mom"] },
-  { id: 2, date: "Apr 2, 2026", mood: "🙂", text: "Had a productive meeting about the new project. Sarah presented great ideas.", tags: ["work"], people: ["Sarah"] },
-  { id: 1, date: "Apr 3, 2026", mood: "😊", text: "Today I had a great workout and felt really energized.", tags: ["exercise"], people: [] },
-];
+const moodEmoji: Record<string, string> = {
+  very_positive: "😊", positive: "🙂", neutral: "😐", stressed: "😰", sad: "😢",
+};
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
+  const { data: entries } = useJournalEntries();
 
-  const filtered = query
-    ? allEntries.filter(
-        (e) =>
-          e.text.toLowerCase().includes(query.toLowerCase()) ||
-          e.people.some((p) => p.toLowerCase().includes(query.toLowerCase())) ||
-          e.tags.some((t) => t.toLowerCase().includes(query.toLowerCase()))
-      )
+  const filtered = query && entries
+    ? entries.filter((e) => {
+        const q = query.toLowerCase();
+        return (
+          e.content?.toLowerCase().includes(q) ||
+          e.entry_tags?.some((t: any) => t.tag.toLowerCase().includes(q)) ||
+          e.people_mentions?.some((p: any) => p.person_name.toLowerCase().includes(q)) ||
+          e.mood?.toLowerCase().includes(q)
+        );
+      })
     : [];
 
   return (
@@ -43,16 +46,20 @@ export default function SearchPage() {
           {filtered.map((entry) => (
             <div key={entry.id} className="bg-card rounded-xl p-5 shadow-card border border-border/50">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-lg">{entry.mood}</div>
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-lg">
+                  {entry.mood ? moodEmoji[entry.mood] : "📝"}
+                </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground mb-1">{entry.date}</p>
-                  <p className="text-sm text-foreground/80">{entry.text}</p>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    {new Date(entry.entry_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                  <p className="text-sm text-foreground/80">{entry.content}</p>
                   <div className="flex gap-1.5 mt-2">
-                    {entry.people.map((p) => (
-                      <span key={p} className="text-xs bg-primary/10 px-2 py-0.5 rounded-full text-primary">@{p}</span>
+                    {entry.people_mentions?.map((p: any) => (
+                      <span key={p.person_name} className="text-xs bg-primary/10 px-2 py-0.5 rounded-full text-primary">@{p.person_name}</span>
                     ))}
-                    {entry.tags.map((t) => (
-                      <span key={t} className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">#{t}</span>
+                    {entry.entry_tags?.map((t: any) => (
+                      <span key={t.tag} className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">#{t.tag}</span>
                     ))}
                   </div>
                 </div>
