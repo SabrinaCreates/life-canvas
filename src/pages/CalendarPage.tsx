@@ -1,17 +1,15 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useJournalEntries } from "@/hooks/useData";
 
-const entryDays: Record<string, { mood: string; types: string[] }> = {
-  "2026-04-01": { mood: "😐", types: ["📝", "📷"] },
-  "2026-04-02": { mood: "🙂", types: ["📝"] },
-  "2026-04-03": { mood: "😊", types: ["🎤", "📷"] },
-  "2026-03-30": { mood: "😊", types: ["📝"] },
-  "2026-03-28": { mood: "😰", types: ["📝"] },
+const moodEmoji: Record<string, string> = {
+  very_positive: "😊", positive: "🙂", neutral: "😐", stressed: "😰", sad: "😢",
 };
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 1)); // April 2026
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const { data: entries } = useJournalEntries();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -19,12 +17,14 @@ export default function CalendarPage() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthName = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const days = [];
+  const days: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) days.push(null);
   for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
-  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const getEntryForDay = (day: number) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return entries?.filter((e) => e.entry_date === dateStr) || [];
+  };
 
   return (
     <DashboardLayout>
@@ -33,11 +33,11 @@ export default function CalendarPage() {
 
         <div className="bg-card rounded-xl p-6 shadow-card border border-border/50">
           <div className="flex items-center justify-between mb-6">
-            <button onClick={prevMonth} className="p-2 hover:bg-muted rounded-lg transition-colors">
+            <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-2 hover:bg-muted rounded-lg transition-colors">
               <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
             <h2 className="font-display text-xl text-foreground">{monthName}</h2>
-            <button onClick={nextMonth} className="p-2 hover:bg-muted rounded-lg transition-colors">
+            <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-2 hover:bg-muted rounded-lg transition-colors">
               <ChevronRight className="w-5 h-5 text-foreground" />
             </button>
           </div>
@@ -51,21 +51,19 @@ export default function CalendarPage() {
           <div className="grid grid-cols-7 gap-1">
             {days.map((day, i) => {
               if (!day) return <div key={i} />;
-              const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-              const entry = entryDays[dateStr];
+              const dayEntries = getEntryForDay(day);
+              const hasEntries = dayEntries.length > 0;
               return (
                 <div
                   key={i}
                   className={`aspect-square rounded-lg p-1.5 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                    entry ? "bg-primary/8 hover:bg-primary/15" : "hover:bg-muted/50"
+                    hasEntries ? "bg-primary/10 hover:bg-primary/20" : "hover:bg-muted/50"
                   }`}
                 >
                   <span className="text-sm text-foreground">{day}</span>
-                  {entry && (
+                  {hasEntries && (
                     <div className="flex gap-0.5 mt-0.5">
-                      {entry.types.map((t, j) => (
-                        <span key={j} className="text-[10px]">{t}</span>
-                      ))}
+                      {dayEntries[0]?.mood && <span className="text-[10px]">{moodEmoji[dayEntries[0].mood]}</span>}
                     </div>
                   )}
                 </div>

@@ -2,19 +2,29 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { BookOpen, Camera, Mic, Plus } from "lucide-react";
 import { NewEntryModal } from "@/components/NewEntryModal";
+import { useJournalEntries } from "@/hooks/useData";
 
-const sampleEntries = [
-  { id: 1, date: "2026-04-03", mood: "😊", moodLabel: "Very Positive", type: "voice", text: "Today I had a great workout and felt really energized. I managed to run 5 miles without stopping.", bucket: "Health", tags: ["exercise", "running"], people: [] },
-  { id: 2, date: "2026-04-02", mood: "🙂", moodLabel: "Positive", type: "text", text: "Had a productive meeting about the new project. The team is aligned and excited about the direction we're taking.", bucket: "Career", tags: ["work", "project"], people: ["Sarah"] },
-  { id: 3, date: "2026-04-01", mood: "😐", moodLabel: "Neutral", type: "photo", text: "Quiet day. Spent time organizing my workspace and planning for the week ahead.", bucket: null, tags: ["organization"], people: [] },
-  { id: 4, date: "2026-03-31", mood: "😰", moodLabel: "Stressed", type: "text", text: "Deadline approaching. Feeling the pressure but trying to stay focused and take breaks.", bucket: "Career", tags: ["stress", "deadlines"], people: [] },
-  { id: 5, date: "2026-03-30", mood: "😊", moodLabel: "Very Positive", type: "text", text: "Amazing dinner with Mom. We talked about childhood memories and laughed a lot.", bucket: null, tags: ["family", "dinner"], people: ["Mom"] },
-];
+const moodEmoji: Record<string, string> = {
+  very_positive: "😊",
+  positive: "🙂",
+  neutral: "😐",
+  stressed: "😰",
+  sad: "😢",
+};
+
+const moodLabel: Record<string, string> = {
+  very_positive: "Very Positive",
+  positive: "Positive",
+  neutral: "Neutral",
+  stressed: "Stressed",
+  sad: "Sad",
+};
 
 const typeIcon = { text: BookOpen, photo: Camera, voice: Mic };
 
 export default function JournalPage() {
   const [showNewEntry, setShowNewEntry] = useState(false);
+  const { data: entries, isLoading } = useJournalEntries();
 
   return (
     <DashboardLayout>
@@ -33,54 +43,56 @@ export default function JournalPage() {
           </button>
         </div>
 
-        <div className="space-y-4">
-          {sampleEntries.map((entry) => {
-            const Icon = typeIcon[entry.type as keyof typeof typeIcon];
-            return (
-              <div key={entry.id} className="bg-card rounded-xl p-6 shadow-card border border-border/50 hover:shadow-soft transition-shadow cursor-pointer">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-2xl shrink-0">
-                    {entry.mood}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {new Date(entry.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                      </span>
-                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{entry.moodLabel}</span>
-                      {entry.bucket && (
-                        <span className="text-xs bg-secondary/20 text-secondary-foreground px-2 py-0.5 rounded-full">
-                          {entry.bucket}
-                        </span>
-                      )}
+        {isLoading ? (
+          <p className="text-muted-foreground text-center py-12">Loading entries...</p>
+        ) : entries && entries.length > 0 ? (
+          <div className="space-y-4">
+            {entries.map((entry) => {
+              const Icon = typeIcon[(entry.entry_type as keyof typeof typeIcon) || "text"];
+              return (
+                <div key={entry.id} className="bg-card rounded-xl p-6 shadow-card border border-border/50 hover:shadow-soft transition-shadow cursor-pointer">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-2xl shrink-0">
+                      {entry.mood ? moodEmoji[entry.mood] : "📝"}
                     </div>
-                    <p className="text-sm text-foreground/80 leading-relaxed mb-2">{entry.text}</p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {entry.tags.map((tag) => (
-                        <span key={tag} className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
-                          #{tag}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-foreground">
+                          {new Date(entry.entry_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                         </span>
-                      ))}
-                      {entry.people.map((person) => (
-                        <span key={person} className="text-xs bg-primary/10 px-2 py-0.5 rounded-full text-primary">
-                          @{person}
-                        </span>
-                      ))}
+                        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                        {entry.mood && <span className="text-xs text-muted-foreground">{moodLabel[entry.mood]}</span>}
+                        {entry.buckets && (
+                          <span className="text-xs bg-secondary/20 text-secondary-foreground px-2 py-0.5 rounded-full">
+                            {(entry.buckets as any).name}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-foreground/80 leading-relaxed mb-2">{entry.content}</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {entry.entry_tags?.map((t: any) => (
+                          <span key={t.tag} className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
+                            #{t.tag}
+                          </span>
+                        ))}
+                        {entry.people_mentions?.map((p: any) => (
+                          <span key={p.person_name} className="text-xs bg-primary/10 px-2 py-0.5 rounded-full text-primary">
+                            @{p.person_name}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Empty state hint */}
-        <div className="mt-8 bg-card rounded-xl p-6 border border-dashed border-border text-center">
-          <p className="text-muted-foreground text-sm">
-            💭 What happened today that felt meaningful?
-          </p>
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-card rounded-xl p-8 border border-dashed border-border text-center">
+            <p className="text-muted-foreground text-sm mb-2">💭 No entries yet</p>
+            <p className="text-muted-foreground/60 text-xs">What happened today that felt meaningful?</p>
+          </div>
+        )}
       </div>
 
       <NewEntryModal open={showNewEntry} onOpenChange={setShowNewEntry} />
