@@ -6,12 +6,23 @@ import { mockEntries } from "@/lib/mockEntries";
 
 type MoodType = Database["public"]["Enums"]["mood_type"];
 
+// In-memory store used while exploring the demo, so new entries and
+// buckets created in demo mode still show up across the app.
+const demoEntries: any[] = [...mockEntries];
+const demoBuckets: any[] = [
+  { id: "demo-b-health", name: "Health", goal: "Gain 10 pounds", category: "Health", is_active: true, user_id: "demo-user", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "demo-b-career", name: "Career", goal: "Grow into a lead role", category: "Career", is_active: true, user_id: "demo-user", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+];
+
 export function useJournalEntries() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   return useQuery({
     queryKey: ["journal-entries", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (isDemo) {
+        return [...demoEntries].sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1)) as any;
+      }
       const { data, error } = await supabase
         .from("journal_entries")
         .select("*, entry_tags(tag), people_mentions(person_name), buckets(name)")
@@ -27,11 +38,12 @@ export function useJournalEntries() {
 }
 
 export function useBuckets() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   return useQuery({
     queryKey: ["buckets", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (isDemo) return [...demoBuckets] as any;
       const { data, error } = await supabase
         .from("buckets")
         .select("*")
