@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 type AuthMode = "login" | "signup" | "reset";
 
@@ -13,6 +14,7 @@ export default function AuthPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { startDemo } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
