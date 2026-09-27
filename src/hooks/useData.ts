@@ -56,7 +56,7 @@ export function useBuckets() {
 
 export function useCreateEntry() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -75,6 +75,29 @@ export function useCreateEntry() {
       entryType?: string;
     }) => {
       if (!user) throw new Error("Not authenticated");
+
+      if (isDemo) {
+        const now = new Date();
+        const newEntry = {
+          id: `demo-${now.getTime()}`,
+          entry_date: now.toISOString().split("T")[0],
+          entry_type: entryType,
+          content,
+          transcript: null,
+          mood,
+          bucket_id: bucketId || null,
+          user_id: "demo-user",
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+          buckets: demoBuckets.find((b) => b.id === bucketId) ?? null,
+          entry_tags: tags.map((tag) => ({ tag })),
+          people_mentions: people.map((person_name) => ({ person_name })),
+        };
+        demoEntries.unshift(newEntry);
+        return newEntry as any;
+      }
+
+
 
       const { data: entry, error } = await supabase
         .from("journal_entries")
