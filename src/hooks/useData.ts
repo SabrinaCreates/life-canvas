@@ -6,12 +6,23 @@ import { mockEntries } from "@/lib/mockEntries";
 
 type MoodType = Database["public"]["Enums"]["mood_type"];
 
+// In-memory store used while exploring the demo, so new entries and
+// buckets created in demo mode still show up across the app.
+const demoEntries: any[] = [...mockEntries];
+const demoBuckets: any[] = [
+  { id: "demo-b-health", name: "Health", goal: "Gain 10 pounds", category: "Health", is_active: true, user_id: "demo-user", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "demo-b-career", name: "Career", goal: "Grow into a lead role", category: "Career", is_active: true, user_id: "demo-user", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+];
+
 export function useJournalEntries() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   return useQuery({
     queryKey: ["journal-entries", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (isDemo) {
+        return [...demoEntries].sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1)) as any;
+      }
       const { data, error } = await supabase
         .from("journal_entries")
         .select("*, entry_tags(tag), people_mentions(person_name), buckets(name)")
@@ -27,11 +38,12 @@ export function useJournalEntries() {
 }
 
 export function useBuckets() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   return useQuery({
     queryKey: ["buckets", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (isDemo) return [...demoBuckets] as any;
       const { data, error } = await supabase
         .from("buckets")
         .select("*")
@@ -44,7 +56,7 @@ export function useBuckets() {
 
 export function useCreateEntry() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -63,6 +75,29 @@ export function useCreateEntry() {
       entryType?: string;
     }) => {
       if (!user) throw new Error("Not authenticated");
+
+      if (isDemo) {
+        const now = new Date();
+        const newEntry = {
+          id: `demo-${now.getTime()}`,
+          entry_date: now.toISOString().split("T")[0],
+          entry_type: entryType,
+          content,
+          transcript: null,
+          mood,
+          bucket_id: bucketId || null,
+          user_id: "demo-user",
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+          buckets: demoBuckets.find((b) => b.id === bucketId) ?? null,
+          entry_tags: tags.map((tag) => ({ tag })),
+          people_mentions: people.map((person_name) => ({ person_name })),
+        };
+        demoEntries.unshift(newEntry);
+        return newEntry as any;
+      }
+
+
 
       const { data: entry, error } = await supabase
         .from("journal_entries")
@@ -103,11 +138,26 @@ export function useCreateEntry() {
 
 export function useCreateBucket() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
 
   return useMutation({
     mutationFn: async ({ name, goal, category }: { name: string; goal: string; category?: string }) => {
       if (!user) throw new Error("Not authenticated");
+      if (isDemo) {
+        const now = new Date().toISOString();
+        const bucket = {
+          id: `demo-b-${Date.now()}`,
+          name,
+          goal,
+          category: category ?? null,
+          is_active: true,
+          user_id: "demo-user",
+          created_at: now,
+          updated_at: now,
+        };
+        demoBuckets.unshift(bucket);
+        return bucket as any;
+      }
       const { data, error } = await supabase
         .from("buckets")
         .insert({ user_id: user.id, name, goal, category })
@@ -123,11 +173,14 @@ export function useCreateBucket() {
 }
 
 export function useProfile() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   return useQuery({
     queryKey: ["profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (isDemo) {
+        return { id: "demo-profile", user_id: "demo-user", display_name: "Demo", avatar_url: null, bio: null } as any;
+      }
       const { data, error } = await supabase
         .from("profiles")
         .select("*")

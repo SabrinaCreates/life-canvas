@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 type AuthMode = "login" | "signup" | "reset";
 
@@ -13,6 +14,7 @@ export default function AuthPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { startDemo } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +116,24 @@ export default function AuthPage() {
               {loading ? "..." : mode === "login" ? "Sign In" : mode === "signup" ? "Create Account" : "Send Reset Link"}
             </button>
           </form>
+
+          <div className="mt-5 pt-5 border-t border-border/60">
+            <button
+              type="button"
+              onClick={() => {
+                startDemo();
+                navigate("/");
+              }}
+              className="w-full border border-primary/40 text-foreground rounded-full py-2.5 text-sm font-semibold hover:bg-primary/10 transition-colors"
+            >
+              Continue as Guest (Demo)
+            </button>
+            <p className="text-[11px] text-muted-foreground text-center mt-2">
+              Explore the full dashboard with sample memories. Nothing is saved.
+            </p>
+          </div>
+
+
 
           <div className="mt-4 text-center space-y-2">
             {mode === "login" && (
