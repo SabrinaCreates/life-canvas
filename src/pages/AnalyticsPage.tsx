@@ -163,8 +163,11 @@ export default function AnalyticsPage() {
             </div>
             <div className="h-32 flex items-end gap-2">
               {moodByDay.map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-primary/20 rounded-t-md transition-all hover:bg-primary/30" style={{ height: `${h}%` }} />
+                <div key={i} className="flex-1 h-full flex flex-col items-center justify-end gap-1">
+                  <div
+                    className="w-full bg-primary/40 rounded-t-md transition-all hover:bg-primary/60 min-h-[4px]"
+                    style={{ height: `${Math.max(6, Math.min(100, h))}%` }}
+                  />
                   <span className="text-[10px] text-muted-foreground">{["M", "T", "W", "T", "F", "S", "S"][i]}</span>
                 </div>
               ))}
@@ -179,8 +182,12 @@ export default function AnalyticsPage() {
             </div>
             <div className="h-32 flex items-end gap-2">
               {freqByDay.map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-accent/30 rounded-t-md transition-all hover:bg-accent/40" style={{ height: `${maxFreq ? (h / maxFreq) * 100 : 0}%` }} />
+                <div key={i} className="flex-1 h-full flex flex-col items-center justify-end gap-1">
+                  <span className="text-[10px] text-muted-foreground">{h}</span>
+                  <div
+                    className="w-full bg-accent/50 rounded-t-md transition-all hover:bg-accent/70 min-h-[4px]"
+                    style={{ height: `${maxFreq ? Math.max(6, (h / maxFreq) * 100) : 6}%` }}
+                  />
                   <span className="text-[10px] text-muted-foreground">{["M", "T", "W", "T", "F", "S", "S"][i]}</span>
                 </div>
               ))}
