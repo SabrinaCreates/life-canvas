@@ -138,11 +138,26 @@ export function useCreateEntry() {
 
 export function useCreateBucket() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
 
   return useMutation({
     mutationFn: async ({ name, goal, category }: { name: string; goal: string; category?: string }) => {
       if (!user) throw new Error("Not authenticated");
+      if (isDemo) {
+        const now = new Date().toISOString();
+        const bucket = {
+          id: `demo-b-${Date.now()}`,
+          name,
+          goal,
+          category: category ?? null,
+          is_active: true,
+          user_id: "demo-user",
+          created_at: now,
+          updated_at: now,
+        };
+        demoBuckets.unshift(bucket);
+        return bucket as any;
+      }
       const { data, error } = await supabase
         .from("buckets")
         .insert({ user_id: user.id, name, goal, category })
@@ -158,11 +173,14 @@ export function useCreateBucket() {
 }
 
 export function useProfile() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   return useQuery({
     queryKey: ["profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (isDemo) {
+        return { id: "demo-profile", user_id: "demo-user", display_name: "Demo", avatar_url: null, bio: null } as any;
+      }
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
