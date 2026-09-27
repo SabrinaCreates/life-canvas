@@ -115,6 +115,24 @@ export default function AuthPage() {
             </button>
           </form>
 
+          <div className="mt-5 pt-5 border-t border-border/60">
+            <button
+              type="button"
+              onClick={() => {
+                startDemo();
+                navigate("/");
+              }}
+              className="w-full border border-primary/40 text-foreground rounded-full py-2.5 text-sm font-semibold hover:bg-primary/10 transition-colors"
+            >
+              Continue as Guest (Demo)
+            </button>
+            <p className="text-[11px] text-muted-foreground text-center mt-2">
+              Explore the full dashboard with sample memories. Nothing is saved.
+            </p>
+          </div>
+
+
+
           <div className="mt-4 text-center space-y-2">
             {mode === "login" && (
               <>
